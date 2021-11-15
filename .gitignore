@@ -2,3 +2,6 @@ Código e afins do jogo/
 ignorar/
 *.docx
 *.tmp
+*.pdf
+*.txt
+@.rar

@@ -3,37 +3,24 @@ import os
 import random
 import neat
 
-pygame.init()
 
-largura_tela = 500
-altura_tela = 800
+ai_jogando = True # Quando False, o usuário que joga
+geracao = 0
 
-imagem_cano = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'pipe-red.png')))
+tela_largura = 500
+tela_altura = 800
+
+imagem_cano = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'pipe.png')))
 imagem_chao = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'base.png')))
-imagem_background = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'background-night.png')))
+imagem_background = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bg.png')))
 imagens_passaro = [
-    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bluebird-upflap.png'))),
-    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bluebird-midflap.png'))),
-    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bluebird-downflap.png'))),
+    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bird1.png'))),
+    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bird2.png'))),
+    pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bird3.png'))),
 ]
 
 pygame.font.init() 
 fonte_pontos = pygame.font.SysFont('arial', 40)
-
-ai_playing = True # Quando False, o usuário que joga
-geracao = 0
-#musica_de_fundo = pygame.mixer.music.load('Extended _160k.mp3')
-
-
-pygame.mixer.music.set_volume(0.1)
-musica_de_fundo = pygame.mixer.music.load('fundo.mp3')
-pygame.mixer.music.play(-1) 
-
-barulho_colisao = pygame.mixer.Sound('smw_coin.wav')
-barulho_colisao.set_volume(0.1)
-morte_som = pygame.mixer.Sound('sfx_die.wav')
-morte_som.set_volume(0.1)
-
 
 # Criar classes para os canos/pássaros/chão
 
@@ -43,9 +30,9 @@ morte_som.set_volume(0.1)
 class Passaro:
     IMGS = imagens_passaro
     # Animações da rotação
-    rotacao_max = 25
+    rotacao_maxima = 25
     velocidade_rotacao = 20
-    tempo_animation = 5
+    tempo_animacao = 5
 
     # Atributos
     
@@ -55,7 +42,7 @@ class Passaro:
         self.angulo = 0
         self.velocidade = 0
         self.altura = self.y
-        self.time = 0 # Tempo da animação de quando o pássaro pula
+        self.tempo = 0 # Tempo da animação de quando o pássaro pula
         self.contagem_imagem = 0
         self.imagem = self.IMGS[0] # primeira imagem do pássaro
 
@@ -63,47 +50,47 @@ class Passaro:
 
     def pular(self):
         self.velocidade = -10.5 #Eixo Y para cima: negativo
-        self.time = 0 # Utilizar a função do deslocamento
+        self.tempo = 0 # Utilizar a função do deslocamento
         self.altura = self.y
 
     # Função de mover
 
     def mover(self):
         #calcular o deslocamento
-        self.time += 1
-        deslocando = self.velocidade * self.time + 1.5 * (self.time**2) #fórmula do sorvetão
+        self.tempo += 1
+        deslocando = self.velocidade * self.tempo + 1.5 * (self.tempo**2) #fórmula do sorvetão
     
         #restringir o deslocamento
-        if deslocando >= 16: #16 pixels
-            deslocando = 16
-        elif deslocando < 0:
-            deslocando -= 2 #Dando um ganho extra para o pulo
+        if deslocamento >= 16: #16 pixels
+            deslocamento = 16
+        elif deslocamento < 0:
+            deslocamento -= 2 #Dando um ganho extra para o pulo
         
-        self.y += deslocando
+        self.y += deslocamento
 
         #angulo do pássaro (para animação)
-        if deslocando < 0 or self.y < (self.altura + 50):#verificar na animação
-             if self.angulo < self.rotacao_max:
-                 self.angulo = self.rotacao_max
+        if deslocamento < 0 or self.y < (self.altura + 50):#verificar na animação
+             if self.angulo < self.rotacao_maxima:
+                 self.angulo = self.rotacao_maxima
         else:
             if self.angulo > -90:
                 self.angulo -= self.velocidade_rotacao
     
     # Desenho do pássaro
-    def desenho(self, tela):
+    def desenhar(self, tela):
         # qual imagem será usada pelo pássaro
 
         self.contagem_imagem += 1
 
-        if self.contagem_imagem < self.tempo_animation:
+        if self.contagem_imagem < self.tempo_animacao:
             self.imagem = self.IMGS[0]
-        elif self.contagem_imagem < self.tempo_animation*2:
+        elif self.contagem_imagem < self.tempo_animacao*2:
             self.imagem = self.IMGS[1]
-        elif self.contagem_imagem < self.tempo_animation*3:
+        elif self.contagem_imagem < self.tempo_animacao*3:
             self.imagem = self.IMGS[2]
-        elif self.contagem_imagem < self.tempo_animation*4:
+        elif self.contagem_imagem < self.tempo_animacao*4:
             self.imagem = self.IMGS[1]
-        elif self.contagem_imagem >= self.tempo_animation*4 + 1:
+        elif self.contagem_imagem >= self.tempo_animacao*4 + 1:
             self.imagem = self.IMGS[0]
             self.contagem_imagem = 0
         
@@ -111,7 +98,7 @@ class Passaro:
         
         if self.angulo <= -80:
             self.imagem = self.IMGS[1]
-            self.contagem_imagem = self.tempo_animation*2
+            self.contagem_imagem = self.tempo_animacao*2
 
         # desenhando a imagem
 
@@ -138,9 +125,9 @@ class Cano:
         self.cano_topo = pygame.transform.flip(imagem_cano, False, True) #False = eixo X; True = eixo Y;
         self.cano_base = imagem_cano
         self.passou = False #passou do cano
-        self.cano_altura() #altura do cano aleatorio
+        self.definir_altura() #altura do cano aleatorio
 
-    def cano_altura(self):
+    def definir_altura(self):
         self.altura = random.randrange(50, 450)
         self.pos_topo = self.altura - self.cano_topo.get_height()
         self.pos_base = self.altura + self.distancia
@@ -150,13 +137,13 @@ class Cano:
         self.x -= self.velociddade
     
     #desenhando o cano
-    def desenho(self, tela):        
+    def desenhar(self, tela):        
         tela.blit(self.cano_topo, (self.x, self.pos_topo))
         tela.blit(self.cano_base, (self.x, self.pos_base))
 
     #colisão
 
-    def colisao(self, passaro):
+    def colidir(self, passaro):
         passaro_mask = passaro.get_mask()
         topo_mask = pygame.mask.from_surface(self.cano_topo) 
         base_mask = pygame.mask.from_surface(self.cano_base)
@@ -197,32 +184,31 @@ class Chao:
         if self.x2 + self.largura < 0:
             self.x2 = self.x1 + self.largura
     
-    def desenho(self, tela):
+    def desenhar(self, tela):
         tela.blit(self.imagem, (self.x1, self.y))
         tela.blit(self.imagem, (self.x2, self.y))
  
 
 # Desenhando o jogo
 
-def desenho_tela(tela, passaros, canos, chao, pontos):
+def desenhar_tela(tela, passaros, canos, chao, pontos):
     tela.blit(imagem_background, (0, 0))
 
     for passaro in passaros: # para a inteligência artifical
-        passaro.desenho(tela) 
+        passaro.desenhar(tela) 
 
     for cano in canos:
-        cano.desenho(tela)
+        cano.desenhar(tela)
     
-    texto = fonte_pontos.render(f"Pontuação: {pontos}", 1, (255, 255, 255)) # 1 para deixar o texto bonito
-    tela.blit(texto, (largura_tela - 10 - texto.get_width(), 10)) #texto, posição
+    texto = fonte_pontos.render(f"PONTUAÇÃO: {pontos}", 1, (255, 255, 255)) # 1 para deixar o texto bonito
+    tela.blit(texto, (tela_largura - 10 - texto.get_width(), 10)) #texto, posição
 
-    if ai_playing:
+    if ai_jogando:
         texto = fonte_pontos.render(f"Geração: {geracao}", 1, (255, 255, 255))
         tela.blit(texto, (10, 10))
 
-    chao.desenho(tela)
+    chao.desenhar(tela)
     pygame.display.update()
-
 
 
 # Executando o jogo
@@ -230,7 +216,7 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
     global geracao # Função global geração (devido ao projeto ser simples)
     geracao += 1
 
-    if ai_playing:
+    if ai_jogando:
         redes = []  # Acompanha o genoma
         lista_genomas = [] # Acompanha o pássaro
         passaros = [] # Primeiro pássaro vai ser a primeira do genoma e da rede neural... etc
@@ -245,14 +231,12 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
     
     chao = Chao(730)
     canos = [Cano(700)]
-    tela = pygame.display.set_mode((largura_tela, altura_tela))
+    tela = pygame.display.set_mode((tela_largura, tela_altura))
     pontos = 0
     relogio = pygame.time.Clock()
 
     rodando = True
     while rodando:
-
-
         relogio.tick(30) #framerate
         
         #Interação com o usuário
@@ -261,7 +245,7 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
                 rodando = False
                 pygame.quit()
                 quit()
-            if not ai_playing:
+            if not ai_jogando:
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_SPACE:
                         for passaro in passaros:
@@ -275,7 +259,7 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
             rodando: False
             break      # Acaba o jogo
 
-        
+
         #Movendo as coisas
         for i, passaro in enumerate(passaros):
             passaro.mover()
@@ -287,7 +271,6 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
             # -1 e 1 --> se o output for > 0.5 então ele pula
             if output[0] > 0.5:
                 passaro.pular()
-                
 
         chao.mover()
 
@@ -295,19 +278,16 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
         remover_canos = []
         for cano in canos:
             for i, passaro in enumerate(passaros): #Para cada posição do pássaros + pássaros dentro da lista:
-                if cano.colisao(passaro):
+                if cano.colidir(passaro):
                     passaros.pop(i)  #Exclue
-                    if ai_playing: # "Penalizar a geração que errou"
+                    if ai_jogando: # "Penalizar a geração que errou"
                         lista_genomas[i].fitness -= 1
                         lista_genomas.pop(i)
                         redes.pop(i)
-                        morte_som.play()
 
                 if not cano.passou and passaro.x > cano.x:
                     cano.passou = True
                     adicionar_cano = True
-                    barulho_colisao.play()
-
             cano.mover()
             if cano.x + cano.cano_topo.get_width() < 0: # Tirando canos da tela
                 remover_canos.append(cano)
@@ -322,14 +302,11 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
         for i, passaro in enumerate(passaros): #Caso o pássaro passe do céu ou do chão
             if (passaro.y + passaro.imagem.get_height()) > chao.y or passaro.y < 0:
                 passaros.pop(i)
-                morte_som.play()
-                if ai_playing:  # Tirando os pássaros ---> Talvez tirar pontos do genoma (verificar)
+                if ai_jogando:  # Tirando os pássaros ---> Talvez tirar pontos do genoma (verificar)
                     lista_genomas.pop(i)
                     redes.pop(i)
-                    
 
-        desenho_tela(tela, passaros, canos, chao, pontos)
-
+        desenhar_tela(tela, passaros, canos, chao, pontos)
 
 def rodar(caminho_config):
     config = neat.Config(
@@ -346,8 +323,8 @@ def rodar(caminho_config):
     stats = neat.StatisticsReporter()
     populacao.add_reporter(stats)
 
-    if ai_playing:
-        populacao.run(main, 100)     # O 50 é o número de geração, pode deixar sem
+    if ai_jogando:
+        populacao.run(main, 50)     # O 50 é o número de geração, pode deixar sem
     else:
         main(None, None) # Sem os parâmetros da IA
 
@@ -355,4 +332,3 @@ if __name__ == '__main__':
     caminho = os.path.dirname(__file__)
     caminho_config = os.path.join(caminho, 'config.txt')
     rodar(caminho_config)
-
