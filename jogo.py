@@ -20,19 +20,18 @@ imagens_passaro = [
 pygame.font.init() 
 fonte_pontos = pygame.font.SysFont('arial', 40)
 
-ai_playing = True # Quando False, o usuário que joga
 geracao = 0
 #musica_de_fundo = pygame.mixer.music.load('Extended _160k.mp3')
 
 
-pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.set_volume(0)
 musica_de_fundo = pygame.mixer.music.load('fundo.mp3')
 pygame.mixer.music.play(-1) 
 
 barulho_colisao = pygame.mixer.Sound('smw_coin.wav')
-barulho_colisao.set_volume(0.1)
+barulho_colisao.set_volume(0)
 morte_som = pygame.mixer.Sound('sfx_die.wav')
-morte_som.set_volume(0.1)
+morte_som.set_volume(0)
 
 
 # Criar classes para os canos/pássaros/chão
@@ -181,7 +180,6 @@ class Chao:
 
     #Lógica de "dois chãos" passando na tela 
 
-
     def __init__(self, y):
         self.y = y
         self.x1 = 0 
@@ -216,9 +214,8 @@ def desenho_tela(tela, passaros, canos, chao, pontos):
     texto = fonte_pontos.render(f"Pontuação: {pontos}", 1, (255, 255, 255)) # 1 para deixar o texto bonito
     tela.blit(texto, (largura_tela - 10 - texto.get_width(), 10)) #texto, posição
 
-    if ai_playing:
-        texto = fonte_pontos.render(f"Geração: {geracao}", 1, (255, 255, 255))
-        tela.blit(texto, (10, 10))
+    texto = fonte_pontos.render(f"Geração: {geracao}", 1, (255, 255, 255))
+    tela.blit(texto, (10, 10))
 
     chao.desenho(tela)
     pygame.display.update()
@@ -230,30 +227,29 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
     global geracao # Função global geração (devido ao projeto ser simples)
     geracao += 1
 
-    if ai_playing:
-        redes = []  # Acompanha o genoma
-        lista_genomas = [] # Acompanha o pássaro
-        passaros = [] # Primeiro pássaro vai ser a primeira do genoma e da rede neural... etc
-        for _, genoma in genomas: # Percorrendo a lista de genomas (as configs das redes) --> O _ é abrindo a lista de tuplas de genomas
-            rede = neat.nn.FeedForwardNetwork.create(genoma, config)    # Criando a rede
-            redes.append(rede)
-            genoma.fitness = 0 # Pontuação do pássaro (não é a pontuação do cano -> é uma "interna")
-            lista_genomas.append(genoma)
-            passaros.append(Passaro(230, 350)) # Criando o pássaro
-    else:
-       passaros = [Passaro(230, 350)]
+    redes = []  # Acompanha o genoma
+    lista_genomas = [] # Acompanha o pássaro
+    passaros = [] # Primeiro pássaro vai ser a primeira do genoma e da rede neural... etc
+    for _, genoma in genomas: # Percorrendo a lista de genomas (as configs das redes) --> O _ é abrindo a lista de tuplas de genomas
+        genoma.fitness = 0 # Pontuação do pássaro (não é a pontuação do cano -> é uma "interna")
+        rede = neat.nn.FeedForwardNetwork.create(genoma, config)    # Criando a rede
+        redes.append(rede)
+        passaros.append(Passaro(230, 350)) # Criando o pássaro
+        lista_genomas.append(genoma)
+
+
     
     chao = Chao(730)
     canos = [Cano(700)]
     tela = pygame.display.set_mode((largura_tela, altura_tela))
     pontos = 0
-    relogio = pygame.time.Clock()
+    framerate = pygame.time.Clock()
 
     rodando = True
     while rodando:
 
 
-        relogio.tick(30) #framerate
+        framerate.tick(30) #framerate
         
         #Interação com o usuário
         for evento in pygame.event.get():
@@ -261,11 +257,7 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
                 rodando = False
                 pygame.quit()
                 quit()
-            if not ai_playing:
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_SPACE:
-                        for passaro in passaros:
-                            passaro.pular()
+                break
 
         indice_cano = 0 # Primeiro cano
         if len(passaros) > 0:   # Se ainda tiver pássaros vivos
@@ -296,12 +288,11 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
         for cano in canos:
             for i, passaro in enumerate(passaros): #Para cada posição do pássaros + pássaros dentro da lista:
                 if cano.colisao(passaro):
+                    lista_genomas[i].fitness -= 1
                     passaros.pop(i)  #Exclue
-                    if ai_playing: # "Penalizar a geração que errou"
-                        lista_genomas[i].fitness -= 1
-                        lista_genomas.pop(i)
-                        redes.pop(i)
-                        morte_som.play()
+                    lista_genomas.pop(i)
+                    redes.pop(i)
+                    morte_som.play()
 
                 if not cano.passou and passaro.x > cano.x:
                     cano.passou = True
@@ -311,24 +302,30 @@ def main(genomas, config): # fitness function --> o quão bem o pássaro foi ---
             cano.mover()
             if cano.x + cano.cano_topo.get_width() < 0: # Tirando canos da tela
                 remover_canos.append(cano)
+
         if adicionar_cano:
             pontos += 1
-            canos.append(Cano(600))
+            canos.append(Cano(650))
             for genoma in lista_genomas:
                 genoma.fitness += 5
+
         for cano in remover_canos:
             canos.remove(cano)
 
         for i, passaro in enumerate(passaros): #Caso o pássaro passe do céu ou do chão
             if (passaro.y + passaro.imagem.get_height()) > chao.y or passaro.y < 0:
+                lista_genomas.pop(i)
+                redes.pop(i)
                 passaros.pop(i)
                 morte_som.play()
-                if ai_playing:  # Tirando os pássaros ---> Talvez tirar pontos do genoma (verificar)
-                    lista_genomas.pop(i)
-                    redes.pop(i)
+                
                     
 
         desenho_tela(tela, passaros, canos, chao, pontos)
+
+        if pontos > 20: # Para não ser infinito
+            break
+
 
 
 def rodar(caminho_config):
@@ -346,10 +343,11 @@ def rodar(caminho_config):
     stats = neat.StatisticsReporter()
     populacao.add_reporter(stats)
 
-    if ai_playing:
-        populacao.run(main, 100)     # O 50 é o número de geração, pode deixar sem
-    else:
-        main(None, None) # Sem os parâmetros da IA
+    vencedor = populacao.run(main, 50)     # 50 = gerações --> encerrar o jogo
+
+    print('Melhor genoma: {!s}'.format(vencedor))
+
+
 
 if __name__ == '__main__':
     caminho = os.path.dirname(__file__)
