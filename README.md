@@ -2,7 +2,12 @@
 <p><b> DESCRIÇÃO SOBRE O FLAPPY BIRD COM NEAT</b></p>
 
 # Jogo
-O projeto se trata da recriação do jogo chamado Flappy Bird com a integração do algoritmo NEAT ao mesmo. É bastante fácil a integração e a configuração do algoritmo que gerará a rede neural, portanto a mesma foi escolhida para fazer parte do Trabalho de Conclusão de Curso do ensino técnico. Entenda um pouquinho mais sobre o [NEAT](http://nn.cs.utexas.edu/downloads/papers/stanley.phd04.pdf).
+O projeto se trata da recriação do jogo chamado Flappy Bird com a integração do algoritmo NEAT ao mesmo. É bastante fácil a integração e a configuração do algoritmo que gerará a rede neural, portanto a mesma foi escolhida para fazer parte do Trabalho de Conclusão de Curso do ensino técnico em informática. Entenda um pouquinho mais sobre o [NEAT](http://nn.cs.utexas.edu/downloads/papers/stanley.phd04.pdf).
+
+<p align="center">
+  <img width="200" src="https://user-images.githubusercontent.com/63131885/143665631-7d560163-9aaa-4b47-9b47-26860f94c810.png">
+</p>
+
 
 # Arquivos
 <p> A pasta para o jogo possui os seguintes arquivos:</p>
